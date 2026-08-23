@@ -1,0 +1,63 @@
+{
+  "$schema": "https://app.clawnify.com/schema/v1/clawnify.json",
+  "version": 1,
+  "name": "Open Recruit",
+  "description": "Applicant tracking with your own careers site: a hiring pipeline per job, candidate profiles that outlive any single role, talent pools, structured evaluations, and AI screening whose every claim is checked against the CV it came from. An open-source alternative to Workable, Greenhouse, Teamtailor and Lever.",
+  "icon": "icon.svg",
+  "tags": ["recruiting", "ats", "hiring", "careers-site", "candidates", "hr"],
+
+  "template": {
+    "displayName": "Recruiting",
+    "category": "People"
+  },
+
+  "app": {
+    "framework": "react+hono",
+    "database": true,
+    "storage": true
+  },
+
+  "api": {
+    "public_routes": [
+      { "path": "/careers", "methods": ["GET"] },
+      { "path": "/careers/*", "methods": ["GET"] },
+      { "path": "/api/careers/apply", "methods": ["POST", "OPTIONS"] },
+      { "path": "/api/careers/jobs", "methods": ["GET", "OPTIONS"] },
+      { "path": "/api/careers/logo", "methods": ["GET"] },
+      { "path": "/api/careers/hero", "methods": ["GET"] },
+      { "path": "/jobs.xml", "methods": ["GET"] },
+      { "path": "/widget.js", "methods": ["GET"] }
+    ],
+    "server_routes": ["/careers", "/careers/*", "/jobs.xml", "/widget.js"]
+  },
+
+  "env": {
+    "optional": ["RESEND_API_KEY", "HIRING_FROM_EMAIL"]
+  },
+
+  "deploy": {
+    "title": "Deploy your Open Recruit",
+    "subtitle": "A careers site, a hiring pipeline, and screening you can check.",
+    "prompts": [
+      {
+        "key": "company_name",
+        "label": "Company name",
+        "placeholder": "e.g. Northwind",
+        "required": true
+      },
+      {
+        "key": "roles",
+        "label": "What do you hire for most?",
+        "placeholder": "e.g. engineers, sales, warehouse operations"
+      },
+      {
+        "key": "details",
+        "label": "Anything else?",
+        "type": "textarea",
+        "placeholder": "Your pipeline stages, brand colour, where you hire..."
+      }
+    ]
+  },
+
+  "agent": "agent.md"
+}

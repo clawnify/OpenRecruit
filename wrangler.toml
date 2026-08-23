@@ -1,0 +1,24 @@
+name = "open-recruit"
+main = "src/server/index.ts"
+compatibility_date = "2026-04-15"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+# Run the Worker first for anything it must answer itself. /careers/* is the
+# public, server-rendered careers site and /jobs.xml + /api/* are machine
+# surfaces — without this the SPA fallback serves index.html for all of them.
+# The deployed build ignores this file and reads api.server_routes from
+# clawnify.json instead, so the two lists must stay in step.
+run_worker_first = ["/api/*", "/llms.txt", "/careers", "/careers/*", "/jobs.xml", "/widget.js"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "open-recruit-db"
+database_id = "local"
+
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "open-recruit-uploads"
