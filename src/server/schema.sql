@@ -57,7 +57,8 @@ create table if not exists settings (
   hide_evaluations  integer not null default 1,
   updated_at        text not null default (datetime('now'))
 );
-insert into settings (id) values (1) on conflict (id) do nothing;
+-- The singleton settings row is created by the app (ensureSeeded in
+-- src/server/index.ts): a deploy applies this file as DDL only.
 
 -- ── Jobs ──────────────────────────────────────────────────────────────
 
@@ -533,18 +534,8 @@ create table if not exists disqualify_reasons (
   label    text not null,
   position integer not null default 0
 );
-insert into disqualify_reasons (id, label, position) values
-  ('not-a-fit',       'Not a fit for this role', 1),
-  ('underqualified',  'Underqualified',          2),
-  ('overqualified',   'Overqualified',           3),
-  ('no-response',     'Unresponsive',            4),
-  ('withdrew',        'Withdrew',                5),
-  ('offer-declined',  'Declined our offer',      6),
-  ('salary',          'Compensation mismatch',   7),
-  ('location',        'Location or work permit', 8),
-  ('position-closed', 'Position closed',         9),
-  ('other',           'Other',                  10)
-on conflict (id) do nothing;
+-- The default disqualify reasons are seeded by the app (ensureSeeded in
+-- src/server/index.ts), never here: this file is applied as DDL only.
 
 -- Which agent screens candidates. A single row by construction: the choice is a
 -- property of the deployment, not of any job. Left empty when the org has one
