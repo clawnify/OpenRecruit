@@ -1,4 +1,6 @@
-import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { AppNav, embedded, reportLocation } from "@clawnify/app/client";
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Activity, BarChart3, Briefcase, LayoutDashboard, Settings2, Users } from "lucide-react";
 import Dashboard from "./routes/dashboard";
 import Jobs from "./routes/jobs";
@@ -19,9 +21,19 @@ const NAV = [
 ];
 
 export default function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => { reportLocation(location.pathname + location.search); }, [location.pathname, location.search]);
+  const icons = ["home", "briefcase", "users", "bar-chart-3", "activity", "settings"];
+  const section = location.pathname.split("/")[1];
+  const active = section === "applications" ? "/candidates" : "/" + section;
   return (
     <div className="flex min-h-dvh">
-      <aside className="hidden w-[16.25rem] shrink-0 flex-col border-r border-border bg-surface md:flex">
+      {embedded ? <AppNav title="Recruit" icon="briefcase" active={active}
+        groups={[{ label: "Hiring", items: NAV.map((item, index) => ({
+          id: item.to, label: item.label, href: item.to, icon: icons[index], home: item.to === "/dashboard",
+        })) }]}
+        onNavigate={item => navigate(item.href ?? "/dashboard")} /> : <aside className="hidden w-[16.25rem] shrink-0 flex-col border-r border-border bg-surface md:flex">
         {/* h-14 here and on Toolbar: the sidebar brand row and the page header
             must share one height so their bottom borders form a single
             unbroken line across the app. Padding-derived heights drift the
@@ -56,7 +68,7 @@ export default function App() {
             View the careers site
           </a>
         </div>
-      </aside>
+      </aside>}
 
       <main className="min-w-0 flex-1">
         <Routes>
