@@ -21,6 +21,7 @@ const SettingsSchema = z
     retention_days: z.number().int(),
     blind_until_position: z.number().int(),
     hide_evaluations: z.number().int(),
+    hiring_for_clients: z.number().int(),
     updated_at: z.string(),
   })
   .openapi("Settings");
@@ -70,6 +71,10 @@ export function registerSettings(app: App) {
               retention_days: z.number().int().min(0).max(3650).optional(),
               blind_until_position: z.number().int().min(0).optional(),
               hide_evaluations: z.boolean().optional(),
+              hiring_for_clients: z
+                .boolean()
+                .optional()
+                .openapi({ description: "True for an agency recruiting on behalf of clients it does not name: job search markup then names the employer as confidential." }),
             }),
           },
         },
@@ -103,6 +108,10 @@ export function registerSettings(app: App) {
     if (body.hide_evaluations !== undefined) {
       sets.push("hide_evaluations = ?");
       params.push(body.hide_evaluations ? 1 : 0);
+    }
+    if (body.hiring_for_clients !== undefined) {
+      sets.push("hiring_for_clients = ?");
+      params.push(body.hiring_for_clients ? 1 : 0);
     }
     if (sets.length) {
       sets.push("updated_at = datetime('now')");

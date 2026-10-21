@@ -45,6 +45,7 @@ The number on the card is therefore a count of verified facts, not a model's con
 - Every published job carries valid **`JobPosting` structured data**, so it is eligible for job search results with no ad budget and no board contract.
 - A **job feed** at `/jobs.xml` for any board that accepts a feed URL, and a one-line **`<script>` widget** that drops your openings onto your own marketing site with no build step.
 - A public **JSON API** for building job pages on your own website: `/api/careers/jobs` lists open roles, and `/api/careers/jobs/<slug>` returns one role in full with its application questions and consent wording, so your site can host the application form and post it to `/api/careers/apply`.
+- **Recruiting for clients?** Agency mode lists the employer as confidential in job search results, as Google asks of agencies, and an imported role keeps its original posting date.
 - Application form with your own questions. A **knockout answer flags** the application for a human — it never rejects anybody (see below).
 
 **Candidates**

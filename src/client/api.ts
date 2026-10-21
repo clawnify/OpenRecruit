@@ -236,6 +236,7 @@ export interface Settings {
   retention_days: number;
   blind_until_position: number;
   hide_evaluations: number;
+  hiring_for_clients: number;
   can_send_email?: boolean;
 }
 

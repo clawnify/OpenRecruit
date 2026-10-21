@@ -86,6 +86,7 @@ function Careers({ settings, onSaved }: { settings: SettingsData; onSaved: () =>
         tagline: String(data.get("tagline") ?? ""),
         intro_md: String(data.get("intro_md") ?? ""),
         accent: String(data.get("accent") ?? ""),
+        hiring_for_clients: data.get("hiring_for_clients") === "on",
       });
       await onSaved();
       setSaved(true);
@@ -140,6 +141,21 @@ function Careers({ settings, onSaved }: { settings: SettingsData; onSaved: () =>
               <Textarea name="intro_md" defaultValue={settings.intro_md} className="min-h-24" />
             </Field>
           </div>
+          <label className="mt-3 flex items-start gap-2.5">
+            <input
+              type="checkbox"
+              name="hiring_for_clients"
+              defaultChecked={settings.hiring_for_clients === 1}
+              className="mt-1"
+            />
+            <span>
+              <span className="block text-[0.8125rem] font-medium">We recruit on behalf of clients</span>
+              <span className="mt-0.5 block text-[0.6875rem] text-muted">
+                For agencies. Job search results then list the employer as confidential, which is what Google asks of
+                an agency posting for a client it doesn&rsquo;t name.
+              </span>
+            </span>
+          </label>
         </Zone>
 
         <Zone>
