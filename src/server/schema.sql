@@ -55,6 +55,10 @@ create table if not exists settings (
   -- own. The first opinion in the room otherwise becomes everybody's, and four
   -- agreeing scorecards then read as four independent judgements.
   hide_evaluations  integer not null default 1,
+  -- 1 when the org recruits on behalf of clients it does not name (an agency).
+  -- Job search markup then names the employer "confidential", which is what
+  -- Google asks of an agency posting for an anonymous employer.
+  hiring_for_clients integer not null default 0,
   updated_at        text not null default (datetime('now'))
 );
 -- The singleton settings row is created by the app (ensureSeeded in

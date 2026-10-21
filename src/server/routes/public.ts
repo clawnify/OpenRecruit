@@ -15,6 +15,7 @@ import { uid, type App } from "../env.js";
 import { escapeHtml, renderMarkdown, toPlainText } from "../markdown.js";
 import { applyKnockouts } from "./applications.js";
 import { extract, isSupported } from "../extract.js";
+import { jobPostingData, jobPostingLd } from "../job-posting.js";
 
 /** A CV, not a film. Bounded so an unauthenticated route cannot fill the bucket. */
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -30,6 +31,7 @@ interface Settings {
   accent: string;
   privacy_url: string;
   consent_text: string;
+  hiring_for_clients: number;
 }
 
 interface PublicJob {
@@ -58,7 +60,7 @@ interface PublicJob {
 
 async function settings(): Promise<Settings> {
   const row = await get<Settings>(
-    "SELECT company_name, company_url, careers_url, tagline, intro_md, logo_key, hero_key, accent, privacy_url, consent_text FROM settings WHERE id = 1",
+    "SELECT company_name, company_url, careers_url, tagline, intro_md, logo_key, hero_key, accent, privacy_url, consent_text, hiring_for_clients FROM settings WHERE id = 1",
   );
   return (
     row ?? {
@@ -72,6 +74,7 @@ async function settings(): Promise<Settings> {
       accent: "#dd5164",
       privacy_url: "",
       consent_text: "",
+      hiring_for_clients: 0,
     }
   );
 }
@@ -109,78 +112,6 @@ function salaryLine(job: PublicJob): string {
   const money = (n: number) => `${job.salary_currency} ${n.toLocaleString("en-US")}`;
   if (job.salary_min && job.salary_max) return `${money(job.salary_min)} – ${money(job.salary_max)} per ${unit}`;
   return `${money(job.salary_min ?? job.salary_max ?? 0)} per ${unit}`;
-}
-
-/**
- * The JobPosting structured data.
- *
- * This is the free half of "multiposting": a posting Google can read is a
- * posting that appears in job search without an ad budget or a contract, and
- * the fields below are the ones its documentation names. `title`, `description`,
- * `datePosted`, `hiringOrganization` and `jobLocation` are required — a posting
- * missing any of them is simply not eligible, which is why the careers page
- * declines to emit the block at all rather than emitting an invalid one.
- *
- * `validThrough` matters more than it looks: a posting with no expiry is treated
- * as stale, and setting it to a past date is one of the documented ways to
- * withdraw a job. The route for a closed job returns 410 for the same reason.
- */
-function jobPostingLd(job: PublicJob, s: Settings, base: string): string | null {
-  const description = renderMarkdown([job.description_md, job.requirements_md, job.benefits_md].filter(Boolean).join("\n\n"));
-  if (!job.title || !description || !job.published_at || !s.company_name || !job.location_country) return null;
-
-  const ld: Record<string, unknown> = {
-    "@context": "https://schema.org/",
-    "@type": "JobPosting",
-    title: job.title,
-    description,
-    datePosted: job.published_at.slice(0, 10),
-    identifier: { "@type": "PropertyValue", name: s.company_name, value: job.slug },
-    hiringOrganization: {
-      "@type": "Organization",
-      name: s.company_name,
-      ...(s.company_url ? { sameAs: s.company_url } : {}),
-      ...(s.logo_key ? { logo: `${base}/api/careers/logo` } : {}),
-    },
-    jobLocation: {
-      "@type": "Place",
-      address: {
-        "@type": "PostalAddress",
-        ...(job.location_city ? { addressLocality: job.location_city } : {}),
-        ...(job.location_region ? { addressRegion: job.location_region } : {}),
-        ...(job.location_postal ? { postalCode: job.location_postal } : {}),
-        addressCountry: job.location_country,
-      },
-    },
-    employmentType: job.employment_type,
-    directApply: true,
-  };
-
-  if (job.closes_at) ld.validThrough = job.closes_at.slice(0, 10);
-  if (job.workplace === "remote") {
-    ld.jobLocationType = "TELECOMMUTE";
-    // Only the country is safe to assert: the free-text region field holds
-    // things like "EU, UTC±2", and a made-up AdministrativeArea is worse than
-    // none. Google reads an absent requirement as "anywhere".
-    if (job.location_country) {
-      ld.applicantLocationRequirements = { "@type": "Country", name: job.location_country };
-    }
-  }
-  if (job.salary_public && (job.salary_min || job.salary_max)) {
-    const value: Record<string, unknown> = { "@type": "QuantitativeValue", unitText: job.salary_unit };
-    if (job.salary_min && job.salary_max) {
-      value.minValue = job.salary_min;
-      value.maxValue = job.salary_max;
-    } else {
-      value.value = job.salary_min ?? job.salary_max;
-    }
-    ld.baseSalary = { "@type": "MonetaryAmount", currency: job.salary_currency, value };
-  }
-
-  // `</script>` inside a JSON string closes the block in an HTML parser even
-  // though it is valid JSON. Escaping the slash keeps the JSON identical and the
-  // page intact — the one escape a JSON-LD block always needs.
-  return JSON.stringify(ld).replace(/<\//g, "<\\/");
 }
 
 /**
@@ -797,6 +728,9 @@ ${items}
           closes_at: job.closes_at,
           url: `${base}/careers/${encodeURIComponent(job.slug)}`,
         },
+        // The JobPosting markup the careers page embeds, so a site that renders its
+        // own job page emits the same thing. null when a required field is missing.
+        structured_data: jobPostingData(job, s, base),
         questions: questions.map((q) => ({
           id: q.id,
           field: `q_${q.id}`,

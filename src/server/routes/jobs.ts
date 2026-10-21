@@ -135,7 +135,25 @@ const JobInput = z.object({
   headcount: z.number().int().min(1).optional(),
   hiring_manager: z.string().optional(),
   closes_at: z.string().nullable().optional(),
+  published_at: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}/)
+    .optional()
+    .openapi({
+      description:
+        "When the role was first posted, for a job imported from another system (ISO date). Defaults to the moment it is first published. Can't be in the future.",
+    }),
 });
+
+/**
+ * The original posting date of an imported role, in the format the app stamps
+ * itself ("YYYY-MM-DD HH:MM:SS"). A future date is refused: "posted on" is what
+ * job search and aggregators sort by, so it may move back, never forward.
+ */
+function postedAt(value: string): string | null {
+  if (value.slice(0, 10) > new Date().toISOString().slice(0, 10)) return null;
+  return value.length === 10 ? `${value} 00:00:00` : value.replace("T", " ").slice(0, 19);
+}
 
 async function uniqueSlug(base: string, exceptId?: string): Promise<string> {
   let slug = base;
@@ -218,12 +236,14 @@ export function registerJobs(app: App) {
         },
       },
     },
-    responses: { 201: ok("The created job", JobSchema) },
+    responses: { 201: ok("The created job", JobSchema), 422: fail("published_at is in the future") },
   });
 
   app.openapi(createJob, async (c) => {
     const body = c.req.valid("json");
     const id = uid();
+    const posted = body.published_at ? postedAt(body.published_at) : null;
+    if (body.published_at && !posted) return c.json({ error: "published_at can't be in the future." } as never, 422);
     const slug = await uniqueSlug(slugify(body.title));
 
     await run(
@@ -231,8 +251,8 @@ export function registerJobs(app: App) {
                          location_city, location_region, location_country, location_postal, remote_region,
                          description_md, requirements_md, benefits_md,
                          salary_min, salary_max, salary_currency, salary_unit, salary_public,
-                         headcount, hiring_manager, closes_at, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                         headcount, hiring_manager, closes_at, published_at, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         slug,
@@ -258,6 +278,7 @@ export function registerJobs(app: App) {
         body.headcount ?? 1,
         body.hiring_manager ?? "",
         body.closes_at ?? null,
+        posted,
         "",
       ],
     );
@@ -343,7 +364,7 @@ export function registerJobs(app: App) {
         },
       },
     },
-    responses: { 200: ok("The updated job", JobSchema), 404: fail("No such job") },
+    responses: { 200: ok("The updated job", JobSchema), 404: fail("No such job"), 422: fail("published_at is in the future") },
   });
 
   app.openapi(updateJob, async (c) => {
@@ -354,6 +375,8 @@ export function registerJobs(app: App) {
       [id],
     );
     if (!before) return c.json({ error: "No such job" } as never, 404);
+    const posted = body.published_at ? postedAt(body.published_at) : null;
+    if (body.published_at && !posted) return c.json({ error: "published_at can't be in the future." } as never, 422);
 
     const sets: string[] = [];
     const params: unknown[] = [];
@@ -402,7 +425,12 @@ export function registerJobs(app: App) {
     // the original, because "posted on" is what an aggregator sorts by and
     // resetting it every time someone reopens a role is how a stale posting
     // keeps claiming to be new.
-    if (body.status === "published") sets.push("published_at = COALESCE(published_at, datetime('now'))");
+    if (posted) {
+      sets.push("published_at = ?");
+      params.push(posted);
+    } else if (body.status === "published") {
+      sets.push("published_at = COALESCE(published_at, datetime('now'))");
+    }
 
     if (sets.length) {
       sets.push("updated_at = datetime('now')");
