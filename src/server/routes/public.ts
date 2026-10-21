@@ -745,6 +745,81 @@ ${items}
   );
 
   /**
+   * One open role in full, for a company that renders its job pages on its own
+   * website: everything the careers page shows, plus what its application form
+   * needs (the job id, the questions, the consent wording) to post to
+   * /api/careers/apply. Same visibility rule as the careers page: drafts and
+   * archived roles do not exist here, and a closed one answers 410.
+   */
+  app.get("/api/careers/jobs/:slug", async (c) => {
+    const s = await settings();
+    const base = origin(c.req.url, s.careers_url);
+    // CORS comes from the platform: a declared public route gets it at the edge.
+    const headers = { "Cache-Control": "public, max-age=120" };
+    const job = await get<PublicJob & { status: string }>(
+      `SELECT id, slug, title, department, employment_type, workplace, location_city, location_region,
+              location_country, location_postal, remote_region, description_md, requirements_md, benefits_md,
+              salary_min, salary_max, salary_currency, salary_unit, salary_public, published_at, closes_at, status
+         FROM jobs WHERE slug = ?`,
+      [c.req.param("slug")],
+    );
+    if (!job || job.status === "draft" || job.status === "archived") {
+      return c.json({ error: "That role isn't listed." }, 404, headers);
+    }
+    if (job.status === "closed" || (job.closes_at != null && job.closes_at < new Date().toISOString().slice(0, 10))) {
+      return c.json({ error: "This role is no longer accepting applications.", title: job.title }, 410, headers);
+    }
+    const questions = await query<{ id: string; prompt: string; type: string; options: string; required: number }>(
+      "SELECT id, prompt, type, options, required FROM job_questions WHERE job_id = ? ORDER BY position",
+      [job.id],
+    );
+    return c.json(
+      {
+        company: s.company_name,
+        job: {
+          id: job.id,
+          slug: job.slug,
+          title: job.title,
+          department: job.department,
+          location: locationLine(job),
+          location_city: job.location_city,
+          location_region: job.location_region,
+          location_country: job.location_country,
+          employment_type: job.employment_type,
+          employment_label: employmentLabel(job.employment_type),
+          workplace: job.workplace,
+          remote_region: job.remote_region,
+          salary: salaryLine(job),
+          description_md: job.description_md,
+          requirements_md: job.requirements_md,
+          benefits_md: job.benefits_md,
+          published_at: job.published_at,
+          closes_at: job.closes_at,
+          url: `${base}/careers/${encodeURIComponent(job.slug)}`,
+        },
+        questions: questions.map((q) => ({
+          id: q.id,
+          field: `q_${q.id}`,
+          prompt: q.prompt,
+          type: q.type,
+          options: q.options
+            .split("\n")
+            .map((o) => o.trim())
+            .filter(Boolean),
+          required: q.required === 1,
+        })),
+        apply: {
+          url: `${base}/api/careers/apply`,
+          consent_text: s.consent_text,
+          privacy_url: s.privacy_url,
+        },
+      },
+      200,
+      headers,
+    );
+  });
+
+  /**
    * The embeddable openings list.
    *
    * One script tag on a company's own website — usually a page nobody can add a
