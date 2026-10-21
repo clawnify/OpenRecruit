@@ -1,7 +1,7 @@
 {
   "$schema": "https://app.clawnify.com/schema/v1/clawnify.json",
   "version": 1,
-  "name": "Open Recruit",
+  "name": "Recruiting",
   "description": "Applicant tracking with your own careers site: a hiring pipeline per job, candidate profiles that outlive any single role, talent pools, structured evaluations, and AI screening whose every claim is checked against the CV it came from. An open-source alternative to Workable, Greenhouse, Teamtailor and Lever.",
   "icon": "icon.svg",
   "tags": ["recruiting", "ats", "hiring", "careers-site", "candidates", "hr"],
@@ -36,7 +36,6 @@
   },
 
   "deploy": {
-    "title": "Deploy your Open Recruit",
     "subtitle": "A careers site, a hiring pipeline, and screening you can check.",
     "prompts": [
       {
