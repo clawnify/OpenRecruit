@@ -23,6 +23,7 @@
       { "path": "/careers/*", "methods": ["GET"] },
       { "path": "/api/careers/apply", "methods": ["POST", "OPTIONS"] },
       { "path": "/api/careers/jobs", "methods": ["GET", "OPTIONS"] },
+      { "path": "/api/careers/jobs/*", "methods": ["GET"] },
       { "path": "/api/careers/logo", "methods": ["GET"] },
       { "path": "/api/careers/hero", "methods": ["GET"] },
       { "path": "/jobs.xml", "methods": ["GET"] },
