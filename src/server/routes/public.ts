@@ -20,6 +20,15 @@ import { jobPostingData, jobPostingLd } from "../job-posting.js";
 /** A CV, not a film. Bounded so an unauthenticated route cannot fill the bucket. */
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
+/**
+ * The Clawnify platform's public Turnstile sitekey. clawnify.json marks the apply
+ * route `human: true`, so on Clawnify the app router refuses an application that
+ * carries no token from this widget. Public by design: the secret stays with the
+ * platform.
+ */
+// shortcut: hardcoded until the platform passes apps the sitekey itself.
+const CLAWNIFY_TURNSTILE_SITEKEY = "0x4AAAAAADtkErHzI7nTZyIH";
+
 interface Settings {
   company_name: string;
   company_url: string;
@@ -356,6 +365,9 @@ ${options.map((o) => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>
       })
       .join("");
 
+    // The router stamps X-Clawnify-Caller on everything it forwards, so the widget
+    // shows only where the human check runs, never on a self-hosted copy.
+    const humanCheck = Boolean(c.req.header("X-Clawnify-Caller"));
     const body = `<div class="wrap"><div class="hero">
 <p class="eyebrow">${escapeHtml(job.department || "Open role")}</p>
 <h1>${escapeHtml(job.title)}</h1>
@@ -389,10 +401,12 @@ ${questionFields}
 <input type="checkbox" name="consent" value="yes" required>
 <span>${escapeHtml(s.consent_text)}${s.privacy_url ? ` <a href="${escapeHtml(s.privacy_url)}">Privacy notice</a>.` : ""}</span>
 </label></div>
+${humanCheck ? `<div class="field"><div class="cf-turnstile" data-sitekey="${CLAWNIFY_TURNSTILE_SITEKEY}"></div></div>` : ""}
 <button class="btn" type="submit">Send application</button>
 <p class="err" id="err" hidden></p>
 </form>
 </div></main>
+${humanCheck ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ""}
 <script>
 // Submitted with fetch so the applicant stays on the page and gets a real
 // answer. The form still has a working method/action, so it degrades to an
@@ -418,6 +432,8 @@ ${questionFields}
       form.scrollIntoView({behavior:'smooth',block:'start'});
     }catch(error){
       err.textContent=error.message;err.hidden=false;button.disabled=false;
+      // A token works once, and the router spent it on this attempt.
+      if(window.turnstile)window.turnstile.reset();
     }
   });
 })();

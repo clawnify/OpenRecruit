@@ -47,6 +47,7 @@ The number on the card is therefore a count of verified facts, not a model's con
 - A public **JSON API** for building job pages on your own website: `/api/careers/jobs` lists open roles, and `/api/careers/jobs/<slug>` returns one role in full with its application questions and consent wording, so your site can host the application form and post it to `/api/careers/apply`.
 - **Recruiting for clients?** Agency mode lists the employer as confidential in job search results, as Google asks of agencies, and an imported role keeps its original posting date.
 - Application form with your own questions. A **knockout answer flags** the application for a human — it never rejects anybody (see below).
+- **Spam stays out of the pipeline.** On Clawnify the apply route asks for a human check (Cloudflare Turnstile) before an application reaches the app, so a bot never creates a candidate or uploads a file.
 
 **Candidates**
 - A candidate is a person, not an application. Someone who applies to three roles is one record, which is what lets the app answer *"have we spoken to this person before?"*
