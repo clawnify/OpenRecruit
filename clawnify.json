@@ -21,7 +21,7 @@
     "public_routes": [
       { "path": "/careers", "methods": ["GET"] },
       { "path": "/careers/*", "methods": ["GET"] },
-      { "path": "/api/careers/apply", "methods": ["POST", "OPTIONS"] },
+      { "path": "/api/careers/apply", "methods": ["POST", "OPTIONS"], "human": true },
       { "path": "/api/careers/jobs", "methods": ["GET", "OPTIONS"] },
       { "path": "/api/careers/jobs/*", "methods": ["GET"] },
       { "path": "/api/careers/logo", "methods": ["GET"] },
