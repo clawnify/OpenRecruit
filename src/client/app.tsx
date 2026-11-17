@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { AppNav, embedded, reportLocation } from "@clawnify/app/client";
+import { AppNav, reportLocation } from "@clawnify/app/client";
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Activity, BarChart3, Briefcase, LayoutDashboard, Settings2, Users } from "lucide-react";
 import Dashboard from "./routes/dashboard";
@@ -29,11 +29,14 @@ export default function App() {
   const active = section === "applications" ? "/candidates" : "/" + section;
   return (
     <div className="flex min-h-dvh">
-      {embedded ? <AppNav title="Recruit" icon="briefcase" active={active}
+      {/* One <AppNav>: inside Clawnify the dashboard draws this navigation,
+          and anywhere else the app's own sidebar below is drawn from it. */}
+      <AppNav title="Recruit" icon="briefcase" active={active}
         groups={[{ label: "Hiring", items: NAV.map((item, index) => ({
           id: item.to, label: item.label, href: item.to, icon: icons[index], home: item.to === "/dashboard",
         })) }]}
-        onNavigate={item => navigate(item.href ?? "/dashboard")} /> : <aside className="hidden w-[16.25rem] shrink-0 flex-col border-r border-border bg-surface md:flex">
+        onNavigate={item => navigate(item.href ?? "/dashboard")}
+        standalone={(nav) => <aside className="hidden w-[16.25rem] shrink-0 flex-col border-r border-border bg-surface md:flex">
         {/* h-14 here and on Toolbar: the sidebar brand row and the page header
             must share one height so their bottom borders form a single
             unbroken line across the app. Padding-derived heights drift the
@@ -63,12 +66,13 @@ export default function App() {
             </NavLink>
           ))}
         </nav>
+        {nav.card && <div className="mt-auto px-2 pb-2">{nav.card}</div>}
         <div className="mt-auto border-t border-border p-3">
           <a className="link text-xs text-muted" href="/careers" target="_blank" rel="noopener">
             View the careers site
           </a>
         </div>
-      </aside>}
+      </aside>} />
 
       <main className="min-w-0 flex-1">
         <Routes>
